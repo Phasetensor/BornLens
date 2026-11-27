@@ -29,8 +29,10 @@ look schedule and model before observing outcomes.
 from bornlens import Sample
 from bornlens.advanced import regression_check, write_report
 
-family = {"Z": (Sample("Z", 8000, 2000), Sample("Z", 8050, 1950)),
-          "X": (Sample("X", 5000, 5000), Sample("X", 4990, 5010))}
+family = {
+    "Z": (Sample("Z", 8000, 2000), Sample("Z", 8050, 1950)),
+    "X": (Sample("X", 5000, 5000), Sample("X", 4990, 5010)),
+}
 settings = {"tolerance": 0.1, "confidence": 0.95}
 result = regression_check(family, **settings)
 assert result["status"] == "pass"
@@ -41,3 +43,12 @@ write_report("regression.json", inputs=family, settings=settings, results=result
 
 - [Multiplicity procedures and dependence assumptions](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/p.adjust.html).
 - [Random-effects analysis and uncertainty in heterogeneity](https://training.cochrane.org/handbook/current/chapter-10).
+
+See the [per-method validation and limitations](traceability.md) and
+[operating characteristics](../benchmarks/acceptance/README.md).
+Time complexity is linear in shots for paired observations, O(m log m)
+for sorting m p-values, and O(Rk) for R conditional draws over k outcome
+categories. Posterior sampling costs O(R). The power planner performs
+O(nA log(nB+1)) vector work per candidate; large asymmetric designs can
+be expensive. Fixed-reference monitoring reuses the reference and controls
+the family via spending; it is not an estimator of change time or physical cause.

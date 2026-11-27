@@ -54,8 +54,7 @@ from bornlens.qiskit import compare_circuits
 a = QuantumCircuit(1)
 b = a.copy()
 b.x(0)
-result = compare_circuits(a, b, "Z", shots_a=1000, shots_b=1500,
-                          tolerance=0.1, seed=17)
+result = compare_circuits(a, b, "Z", shots_a=1000, shots_b=1500, tolerance=0.1, seed=17)
 print(result.verdict)  # beyond_tolerance
 ```
 
@@ -67,7 +66,7 @@ of one full-width register. The caller supplies the measurement basis and mappin
 The simulator uses separate random streams for A and B. Run the checks with
 `python -m unittest discover -s tests -v`.
 
-## Validation and release 0.1.0
+## Fixed-design validation
 
 Install the release with `python -m pip install bornlens==0.3.0`.
 For development install the checkout with the Qiskit extra and run
@@ -83,3 +82,7 @@ ideal fixed-shot behavior; hardware drift and correlated noise require separate 
 Install the stats extra with `python -m pip install 'bornlens[stats]'`. See [methods, power and hardware evidence](docs/methods.md) and the [changelog](CHANGELOG.md).
 
 See the [advanced analysis guide](docs/advanced.md) for multi-observable regression, sequential and paired inference, Bayesian analysis, bootstrap, distribution and drift tests, design optimization, hierarchical inference and JSON reports.
+
+The consolidation candidate and its [scientific evidence](docs/traceability.md)
+are tracked in the [roadmap](ROADMAP.md). Full acceptance data include
+adverse small-sample bootstrap and random-effects results.

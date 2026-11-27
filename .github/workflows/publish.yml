@@ -1,12 +1,11 @@
 name: Test and release
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
+  acceptance:
+    uses: ./.github/workflows/validation.yml
   tests:
     runs-on: ubuntu-22.04
     strategy:
@@ -27,7 +26,7 @@ jobs:
           python -m coverage run --branch --source=bornlens -m unittest discover -s tests
           python -m coverage report -m
   build:
-    needs: tests
+    needs: [tests, acceptance]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4

@@ -24,9 +24,11 @@ inconclusive result does not count as correct classification.
 
 ```python
 from bornlens.statistics import classification_power, plan_classification
-p = classification_power(.5, .65, 2000, 2000, tolerance=.1)
-design, power = plan_classification(.5, .65, [(250,250), (2000,2000), (5000,5000)],
-                                    target=.9, tolerance=.1)
+
+p = classification_power(0.5, 0.65, 2000, 2000, tolerance=0.1)
+design, power = plan_classification(
+    0.5, 0.65, [(250, 250), (2000, 2000), (5000, 5000)], target=0.9, tolerance=0.1
+)
 ```
 
 The planner searches the supplied designs in increasing total shots. It returns
@@ -81,3 +83,13 @@ check of the power algorithm and fixtures for disjoint pilot/final stages.
 Python trace with missing-line counting recorded 219/228 executable package
 lines (96.1%) on Python 3.12. CI also measures branches using coverage.py;
 these metrics use different denominators.
+
+## Advanced validation
+
+The acceptance study, independent reference tests, Monte Carlo errors, runtime
+and memory are indexed in [the traceability matrix](traceability.md).
+The sequential implementation uses a summable union bound; see
+[Howard et al. on confidence sequences](https://par.nsf.gov/servlets/purl/10251927)
+for broader constructions. The permutation Monte Carlo test counts the
+observed assignment in the reference set; see
+[Phipson and Smyth](https://pubmed.ncbi.nlm.nih.gov/21044043/).

@@ -3,3 +3,5 @@ recursive-include tests *.py
 include CITATION.cff CHANGELOG.md
 recursive-include docs *.md
 recursive-include examples *.py
+include ROADMAP.md
+recursive-include benchmarks/acceptance *.json *.md *.svg

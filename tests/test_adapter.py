@@ -8,6 +8,7 @@ from bornlens import Sample, compare
 class AdapterTests(unittest.TestCase):
     def test_axes_and_order(self):
         from qiskit import QuantumCircuit
+
         from bornlens.qiskit import from_counts, sample_counts
 
         circuit = QuantumCircuit(2)
@@ -23,13 +24,15 @@ class AdapterTests(unittest.TestCase):
 
     def test_same_counts(self):
         from unittest.mock import patch
+
         from qiskit import QuantumCircuit
+
         from bornlens.qiskit import compare_circuits, sample_counts
 
         a = QuantumCircuit(1)
         a.h(0)
         b = QuantumCircuit(1)
-        b.ry(.4, 0)
+        b.ry(0.4, 0)
         observed = []
 
         def record(*args, **kwargs):
@@ -38,13 +41,15 @@ class AdapterTests(unittest.TestCase):
             return counts
 
         with patch("bornlens.qiskit.sample_counts", side_effect=record):
-            actual = compare_circuits(a, b, "Z", shots_a=900, shots_b=1600,
-                                      tolerance=.1, seed=19)
-        self.assertEqual(actual, compare(*observed, tolerance=.1))
+            actual = compare_circuits(
+                a, b, "Z", shots_a=900, shots_b=1600, tolerance=0.1, seed=19
+            )
+        self.assertEqual(actual, compare(*observed, tolerance=0.1))
         self.assertEqual(actual.verdict, "beyond_tolerance")
 
     def test_invalid_inputs(self):
         from qiskit import QuantumCircuit
+
         from bornlens.qiskit import from_counts, sample_counts
 
         for counts in [{}, {"01": 4}, {"0 1": 3}, {"1": -1}]:

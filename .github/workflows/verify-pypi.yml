@@ -16,6 +16,6 @@ jobs:
           python-version: '3.12'
       - run: |
           python -m venv /tmp/bornlens-public
-          /tmp/bornlens-public/bin/pip install --no-cache-dir --index-url https://pypi.org/simple 'bornlens[stats]==0.3.0'
+          /tmp/bornlens-public/bin/pip install --no-cache-dir --index-url https://pypi.org/simple 'bornlens[stats]==0.3.1'
           /tmp/bornlens-public/bin/python -I -c 'from bornlens import shots_per_circuit; assert shots_per_circuit(0.05) == 5903'
           /tmp/bornlens-public/bin/python -I -c 'from bornlens.advanced import adjust_pvalues; assert adjust_pvalues([0.01], "holm") == [0.01]'

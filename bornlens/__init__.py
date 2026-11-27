@@ -1,6 +1,6 @@
 """Compare independent, fixed-size samples of the same Pauli observable."""
-from __future__ import annotations
 
+from __future__ import annotations
 
 from dataclasses import dataclass
 from math import ceil, isfinite, log, sqrt
@@ -36,7 +36,11 @@ class Sample:
 
     def __post_init__(self) -> None:
         label = self.observable
-        if not isinstance(label, str) or not label or any(p not in "IXYZ" for p in label):
+        if (
+            not isinstance(label, str)
+            or not label
+            or any(p not in "IXYZ" for p in label)
+        ):
             raise ValueError("observable must be a nonempty uppercase Pauli string")
         for name in ("plus", "minus"):
             object.__setattr__(self, name, _integer(getattr(self, name), name))
@@ -77,7 +81,14 @@ def _verdict(lower, upper, tolerance):
     return "inconclusive"
 
 
-def compare(a: Sample, b: Sample, *, tolerance: float, confidence: float=0.95, method: str="hoeffding") -> Comparison:
+def compare(
+    a: Sample,
+    b: Sample,
+    *,
+    tolerance: float,
+    confidence: float = 0.95,
+    method: str = "hoeffding",
+) -> Comparison:
     """Return a two-sided Hoeffding interval and its tolerance verdict."""
     if not isinstance(a, Sample) or not isinstance(b, Sample):
         raise TypeError("both inputs must be Sample instances")
@@ -94,16 +105,27 @@ def compare(a: Sample, b: Sample, *, tolerance: float, confidence: float=0.95, m
     lower, upper = max(-2, delta - radius), min(2, delta + radius)
     if method != "hoeffding":
         from .statistics import interval
+
         lower, upper = interval(a.plus, a.shots, b.plus, b.shots, confidence, method)
         lower, upper = float(lower), float(upper)
         if set(a.observable) == {"I"}:
             lower = upper = 0.0
-    return Comparison(a.observable, a.mean, b.mean, delta, (lower, upper),
-                      tolerance, confidence, a.shots, b.shots,
-                      _verdict(lower, upper, tolerance), method)
+    return Comparison(
+        a.observable,
+        a.mean,
+        b.mean,
+        delta,
+        (lower, upper),
+        tolerance,
+        confidence,
+        a.shots,
+        b.shots,
+        _verdict(lower, upper, tolerance),
+        method,
+    )
 
 
-def shots_per_circuit(half_width: float, *, confidence: float=0.95) -> int:
+def shots_per_circuit(half_width: float, *, confidence: float = 0.95) -> int:
     """Equal fixed sample sizes sufficient for the requested interval precision."""
     half_width = _real(half_width, "half_width")
     if not 0 < half_width <= 2:

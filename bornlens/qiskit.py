@@ -1,9 +1,9 @@
 """Ideal statevector sampling for bound unitary Qiskit circuits."""
-from __future__ import annotations
-from typing import Optional, Union
 
+from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Optional, Union
 
 import numpy as np
 from qiskit.circuit import Gate, QuantumCircuit
@@ -12,7 +12,7 @@ from qiskit.quantum_info import Statevector
 from . import Comparison, Sample, _integer, compare
 
 
-def from_counts(counts: Mapping[str,int], observable: str) -> Sample:
+def from_counts(counts: Mapping[str, int], observable: str) -> Sample:
     """Convert basis-rotated counts with one classical bit per qubit."""
     Sample(observable, 1, 0)
     if not isinstance(counts, Mapping):
@@ -20,15 +20,26 @@ def from_counts(counts: Mapping[str,int], observable: str) -> Sample:
     mask = int("".join("0" if p == "I" else "1" for p in observable), 2)
     totals = [0, 0]
     for bits, count in counts.items():
-        if (not isinstance(bits, str) or len(bits) != len(observable)
-                or any(bit not in "01" for bit in bits)):
-            raise ValueError("expected one binary digit per qubit, in a single register")
+        if (
+            not isinstance(bits, str)
+            or len(bits) != len(observable)
+            or any(bit not in "01" for bit in bits)
+        ):
+            raise ValueError(
+                "expected one binary digit per qubit, in a single register"
+            )
         parity = bin(int(bits, 2) & mask).count("1") % 2
         totals[parity] += _integer(count, "count")
     return Sample(observable, *totals)
 
 
-def sample_counts(circuit: QuantumCircuit, observable: str, shots: int, *, seed: Optional[Union[int,np.random.Generator]]=None) -> dict[str,int]:
+def sample_counts(
+    circuit: QuantumCircuit,
+    observable: str,
+    shots: int,
+    *,
+    seed: Optional[Union[int, np.random.Generator]] = None,
+) -> dict[str, int]:
     """Sample after rotating each measured Pauli axis to the Z basis."""
     Sample(observable, 1, 0)
     shots = _integer(shots, "shots", 1)
@@ -50,13 +61,27 @@ def sample_counts(circuit: QuantumCircuit, observable: str, shots: int, *, seed:
     return dict(state.sample_counts(shots))
 
 
-def compare_circuits(a: QuantumCircuit, b: QuantumCircuit, observable: str, *, shots_a: int, shots_b: int, tolerance: float,
-                     confidence: float=0.95, seed: Optional[int]=None, method: str="hoeffding") -> Comparison:
+def compare_circuits(
+    a: QuantumCircuit,
+    b: QuantumCircuit,
+    observable: str,
+    *,
+    shots_a: int,
+    shots_b: int,
+    tolerance: float,
+    confidence: float = 0.95,
+    seed: Optional[int] = None,
+    method: str = "hoeffding",
+) -> Comparison:
     """Run both ideal circuits using separate random streams."""
     streams = np.random.SeedSequence(seed).spawn(2)
     samples = [
-        from_counts(sample_counts(circuit, observable, shots,
-                                  seed=np.random.default_rng(stream)), observable)
+        from_counts(
+            sample_counts(
+                circuit, observable, shots, seed=np.random.default_rng(stream)
+            ),
+            observable,
+        )
         for circuit, shots, stream in zip((a, b), (shots_a, shots_b), streams)
     ]
     return compare(*samples, tolerance=tolerance, confidence=confidence, method=method)
