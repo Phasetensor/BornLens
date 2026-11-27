@@ -1,5 +1,8 @@
 name: Verify public installation
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/verify-pypi.yml']
   workflow_dispatch:
   workflow_run:
     workflows: ["Test and release"]
@@ -8,9 +11,17 @@ permissions:
   contents: read
 jobs:
   install:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v4
+      - name: Compare published distributions with approved SHA-256
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.3.1 --dir github-files
+          (cd github-files && sha256sum -c ../releases/0.3.1.sha256)
+          python scripts/verify_hashes.py github-files github-files 0.3.1
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
