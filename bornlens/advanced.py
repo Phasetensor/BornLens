@@ -1,4 +1,7 @@
 """Advanced finite-shot analysis. Install bornlens[stats]."""
+from __future__ import annotations
+from typing import Any, Optional, Sequence, Union
+
 import json
 from dataclasses import asdict, is_dataclass
 from math import log, sqrt
@@ -10,7 +13,7 @@ import numpy as np
 from scipy.stats import binomtest, fisher_exact, norm
 
 from . import Comparison, Sample, _integer, _real, _verdict, compare
-from .statistics import classification_power
+from .statistics import Power, classification_power
 
 
 def _prob(value, name):
@@ -32,7 +35,7 @@ def _pair(a, b):
         raise ValueError("expected samples with matching Pauli labels")
 
 
-def adjust_pvalues(values, method="holm"):
+def adjust_pvalues(values: Sequence[float], method: str="holm") -> list[float]:
     """Adjusted p-values in input order. fdr_bh and fdr_by control FDR."""
     p = np.asarray(values, dtype=float)
     if p.ndim != 1 or not p.size or not np.all(np.isfinite(p) & (p >= 0) & (p <= 1)):
@@ -54,9 +57,9 @@ def adjust_pvalues(values, method="holm"):
     return result.tolist()
 
 
-def compare_many(pairs, *, tolerance, confidence=.95, method="hoeffding"):
+def compare_many(pairs: Mapping[str,tuple[Sample,Sample]], *, tolerance: float, confidence: float=.95, method: str="hoeffding") -> dict[str,Comparison]:
     """Simultaneous Bonferroni intervals, valid under arbitrary across-label dependence."""
-    if not pairs or method not in ("hoeffding", "exact"):
+    if not isinstance(pairs, Mapping) or not pairs or method not in ("hoeffding", "exact"):
         raise ValueError("provide a nonempty family and a finite-sample method")
     marginal = 1-(1-_prob(confidence,"confidence"))/len(pairs)
     results = {}
@@ -68,7 +71,7 @@ def compare_many(pairs, *, tolerance, confidence=.95, method="hoeffding"):
     return results
 
 
-def regression_check(pairs, **settings):
+def regression_check(pairs: Mapping[str,tuple[Sample,Sample]], **settings: Any) -> dict[str,Any]:
     results = compare_many(pairs, **settings)
     verdicts = {r.verdict for r in results.values()}
     status = "fail" if "beyond_tolerance" in verdicts else (
@@ -76,7 +79,7 @@ def regression_check(pairs, **settings):
     return {"status":status, "observables":results}
 
 
-def sequential_compare(a, b, *, tolerance, confidence=.95):
+def sequential_compare(a: Sample, b: Sample, *, tolerance: float, confidence: float=.95) -> Comparison:
     """Anytime-valid at every matched cumulative shot count n, for one fixed pair."""
     _pair(a,b)
     n = a.shots
@@ -94,7 +97,7 @@ def sequential_compare(a, b, *, tolerance, confidence=.95):
                       _verdict(lo,hi,tolerance),"sequential_hoeffding")
 
 
-def bayesian_compare(a,b,*,tolerance,prior=(.5,.5),confidence=.95,draws=50000,seed=0):
+def bayesian_compare(a: Sample,b: Sample,*,tolerance: float,prior: tuple[float,float]=(.5,.5),confidence: float=.95,draws: int=50000,seed: Optional[int]=0) -> dict[str,Any]:
     """Independent beta posteriors on plus probabilities; posterior Monte Carlo."""
     _pair(a,b)
     tolerance, confidence = _tol(tolerance), _prob(confidence,"confidence")
@@ -120,7 +123,7 @@ def _paired(a,b):
     return b.astype(float)-a.astype(float)
 
 
-def paired_compare(a,b,*,tolerance,confidence=.95):
+def paired_compare(a: Sequence[int],b: Sequence[int],*,tolerance: float,confidence: float=.95) -> dict[str,Any]:
     d = _paired(a,b)
     tolerance, confidence = _tol(tolerance), _prob(confidence,"confidence")
     radius = sqrt(8*log(2/(1-confidence))/len(d))
@@ -129,7 +132,7 @@ def paired_compare(a,b,*,tolerance,confidence=.95):
     return dict(delta=mean,interval=(lo,hi),pairs=len(d),verdict=_verdict(lo,hi,tolerance))
 
 
-def bootstrap_interval(a,b,*,paired=False,confidence=.95,draws=10000,seed=0):
+def bootstrap_interval(a: Any,b: Any,*,paired: bool=False,confidence: float=.95,draws: int=10000,seed: Optional[int]=0) -> tuple[float,float]:
     """Percentile bootstrap of the mean change, using the empirical discrete laws."""
     rng = np.random.default_rng(seed)
     tail = (1-_prob(confidence,"confidence"))/2
@@ -146,7 +149,7 @@ def bootstrap_interval(a,b,*,paired=False,confidence=.95,draws=10000,seed=0):
     return tuple(np.quantile(delta,[tail,1-tail]).tolist())
 
 
-def randomization_test(a,b,*,paired=False):
+def randomization_test(a: Any,b: Any,*,paired: bool=False) -> float:
     """Exact two-sided test of exchangeability for binary outcomes."""
     if paired:
         d = _paired(a,b)
@@ -156,12 +159,15 @@ def randomization_test(a,b,*,paired=False):
     return float(fisher_exact([[a.plus,a.minus],[b.plus,b.minus]])[1])
 
 
-def distribution_compare(a,b,*,draws=10000,seed=0):
+def distribution_compare(a: Mapping[str,int],b: Mapping[str,int],*,draws: int=10000,seed: Optional[int]=0) -> dict[str,Any]:
     """Total variation and a conditional random-label test for common categories."""
     if not isinstance(a, Mapping) or not isinstance(b, Mapping):
         raise TypeError("use count mappings")
     labels = sorted(set(a)|set(b))
-    counts = np.array([[_integer(m.get(k,0),"count") for k in labels] for m in (a,b)])
+    rows = [[_integer(m.get(k,0),"count") for k in labels] for m in (a,b)]
+    if sum(map(sum,rows)) >= 10**9:
+        raise ValueError('permutation sampler requires pooled count below one billion')
+    counts = np.asarray(rows,dtype=np.int64)
     na,nb = counts.sum(axis=1)
     if min(na,nb) <= 0:
         raise ValueError("empty distribution")
@@ -178,7 +184,7 @@ def distribution_compare(a,b,*,draws=10000,seed=0):
     return dict(total_variation=observed,pvalue=(extreme+1)/(draws+1),draws=draws,seed=seed)
 
 
-def readout_diagnostics(prepared_zero,prepared_one,*,confidence=.95):
+def readout_diagnostics(prepared_zero: Sample,prepared_one: Sample,*,confidence: float=.95) -> dict[str,Any]:
     """Single-qubit Z calibration: conditional flip rates and readout contrast."""
     _pair(prepared_zero,prepared_one)
     if prepared_zero.observable != "Z":
@@ -193,7 +199,7 @@ def readout_diagnostics(prepared_zero,prepared_one,*,confidence=.95):
     return out
 
 
-def drift_monitor(reference,windows,*,alpha=.05):
+def drift_monitor(reference: Sample,windows: Sequence[Sample],*,alpha: float=.05) -> list[dict[str,Any]]:
     """Compare fixed disjoint time batches with a fixed reference, spending alpha."""
     alpha = _prob(alpha,"alpha")
     history = []
@@ -204,7 +210,7 @@ def drift_monitor(reference,windows,*,alpha=.05):
     return history
 
 
-def effect_size(a,b,*,tolerance):
+def effect_size(a: Sample,b: Sample,*,tolerance: float) -> dict[str,float]:
     _pair(a,b)
     tolerance = _tol(tolerance)
     pa,pb = a.plus/a.shots,b.plus/b.shots
@@ -213,7 +219,7 @@ def effect_size(a,b,*,tolerance):
                 margin_excess=abs(b.mean-a.mean)-tolerance)
 
 
-def optimize_design(p_a,p_b,allocations,*,budget,**settings):
+def optimize_design(p_a: float,p_b: float,allocations: Sequence[tuple[int,int]],*,budget: int,**settings: Any) -> Optional[tuple[tuple[int,int],Power]]:
     """Maximize correct classification among admissible candidate designs."""
     budget = _integer(budget,"budget",2)
     best = None
@@ -227,28 +233,32 @@ def optimize_design(p_a,p_b,allocations,*,budget,**settings):
     return best
 
 
-def hierarchical_effect(effects,standard_errors,*,confidence=.95):
+def hierarchical_effect(effects: Sequence[float],standard_errors: Sequence[float],*,confidence: float=.95) -> dict[str,Any]:
     """Normal random-effects meta-analysis; DerSimonian-Laird moment estimate."""
     y,se = np.asarray(effects,dtype=float),np.asarray(standard_errors,dtype=float)
     if y.ndim!=1 or y.size<2 or se.shape!=y.shape or not (
             np.isfinite(y).all() and np.isfinite(se).all() and (se>0).all()):
         raise ValueError("provide at least two independent effects with positive standard errors")
+    y = y.astype(np.longdouble)
+    se = se.astype(np.longdouble)
     w = 1/se**2
     fixed = np.average(y,weights=w)
     q = np.sum(w*(y-fixed)**2)
-    tau2 = max(0.,float((q-len(y)+1)/(w.sum()-np.dot(w,w)/w.sum())))
+    tau2 = max(0.,float((q-len(y)+1)/(2*np.sum(w[1:]*np.cumsum(w[:-1]))/w.sum())))
+    if not np.isfinite(tau2):
+        raise ValueError('between-study variance exceeds floating-point range')
     weights = 1/(se**2+tau2)
     mu = float(np.average(y,weights=weights))
-    radius = -norm.ppf((1-_prob(confidence,"confidence"))/2)/sqrt(weights.sum())
-    return dict(mean=mu,between_variance=tau2,interval=(mu-radius,mu+radius),
-                shrunk_effects=(mu+tau2*weights*(y-mu)).tolist())
+    radius = -norm.ppf((1-_prob(confidence,"confidence"))/2)/np.sqrt(weights.sum())
+    return dict(mean=mu,between_variance=tau2,interval=(float(mu-radius),float(mu+radius)),
+                shrunk_effects=(mu+tau2*weights*(y-mu)).astype(float).tolist())
 
 
-def write_report(path,*,inputs,settings,results):
+def write_report(path: Union[str,Path],*,inputs: Any,settings: Any,results: Any) -> None:
     """Write machine-readable inputs, analysis configuration and results as strict JSON."""
     from importlib.metadata import version
     def encode(value):
-        if is_dataclass(value):
+        if is_dataclass(value) and not isinstance(value, type):
             return asdict(value)
         if isinstance(value,np.generic):
             return value.item()

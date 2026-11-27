@@ -1,4 +1,7 @@
 """Ideal statevector sampling for bound unitary Qiskit circuits."""
+from __future__ import annotations
+from typing import Optional, Union
+
 
 from collections.abc import Mapping
 
@@ -6,10 +9,10 @@ import numpy as np
 from qiskit.circuit import Gate, QuantumCircuit
 from qiskit.quantum_info import Statevector
 
-from . import Sample, _integer, compare
+from . import Comparison, Sample, _integer, compare
 
 
-def from_counts(counts, observable):
+def from_counts(counts: Mapping[str,int], observable: str) -> Sample:
     """Convert basis-rotated counts with one classical bit per qubit."""
     Sample(observable, 1, 0)
     if not isinstance(counts, Mapping):
@@ -25,7 +28,7 @@ def from_counts(counts, observable):
     return Sample(observable, *totals)
 
 
-def sample_counts(circuit, observable, shots, *, seed=None):
+def sample_counts(circuit: QuantumCircuit, observable: str, shots: int, *, seed: Optional[Union[int,np.random.Generator]]=None) -> dict[str,int]:
     """Sample after rotating each measured Pauli axis to the Z basis."""
     Sample(observable, 1, 0)
     shots = _integer(shots, "shots", 1)
@@ -47,8 +50,8 @@ def sample_counts(circuit, observable, shots, *, seed=None):
     return dict(state.sample_counts(shots))
 
 
-def compare_circuits(a, b, observable, *, shots_a, shots_b, tolerance,
-                     confidence=0.95, seed=None, method="hoeffding"):
+def compare_circuits(a: QuantumCircuit, b: QuantumCircuit, observable: str, *, shots_a: int, shots_b: int, tolerance: float,
+                     confidence: float=0.95, seed: Optional[int]=None, method: str="hoeffding") -> Comparison:
     """Run both ideal circuits using separate random streams."""
     streams = np.random.SeedSequence(seed).spawn(2)
     samples = [

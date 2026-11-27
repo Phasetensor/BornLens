@@ -1,4 +1,7 @@
 """Binomial interval and fixed-design power calculations (install the stats extra)."""
+from __future__ import annotations
+from typing import Any, Optional, Sequence
+
 from dataclasses import dataclass
 from math import sqrt
 import numpy as np
@@ -21,7 +24,7 @@ def _bounds(k, n, alpha, method):
     return lo, hi
 
 
-def interval(ka, na, kb, nb, confidence, method):
+def interval(ka: Any, na: int, kb: Any, nb: int, confidence: float, method: str) -> tuple[Any,Any]:
     factor = _log_factor(confidence)
     a, b = np.asarray(ka)/na, np.asarray(kb)/nb
     d = (2*kb-nb)/nb - (2*ka-na)/na
@@ -46,8 +49,8 @@ class Power:
     correct: float
 
 
-def classification_power(p_a, p_b, n_a, n_b, *, tolerance, confidence=.95,
-                         method="hoeffding"):
+def classification_power(p_a: float, p_b: float, n_a: int, n_b: int, *, tolerance: float, confidence: float=.95,
+                         method: str="hoeffding") -> Power:
     """Sum joint binomial probabilities. Inputs p_a,p_b are P(+1)."""
     pa, pb = _real(p_a, "p_a"), _real(p_b, "p_b")
     tol = _real(tolerance, "tolerance")
@@ -72,7 +75,9 @@ def classification_power(p_a, p_b, n_a, n_b, *, tolerance, confidence=.95,
 
     start = first(0, -tol, False)
     stop = first(1, tol, True)
-    within = np.maximum(0, binom.cdf(stop-1, nb, pb)-binom.cdf(start-1, nb, pb))
+    within = np.maximum(0, np.where(start > nb*pb,
+        binom.sf(start-1, nb, pb)-binom.sf(stop-1, nb, pb),
+        binom.cdf(stop-1, nb, pb)-binom.cdf(start-1, nb, pb)))
     beyond = (binom.cdf(first(1, -tol, False)-1, nb, pb)
               + binom.sf(first(0, tol, True)-1, nb, pb))
     w, b = float(weights @ within), float(weights @ beyond)
@@ -82,7 +87,7 @@ def classification_power(p_a, p_b, n_a, n_b, *, tolerance, confidence=.95,
     return Power(w, b, max(0., 1-w-b), w if inside else b)
 
 
-def plan_classification(p_a, p_b, designs, *, target, **settings):
+def plan_classification(p_a: float, p_b: float, designs: Sequence[tuple[int,int]], *, target: float, **settings: Any) -> Optional[tuple[tuple[int,int],Power]]:
     """Return lowest total shots meeting target among supplied (n_a,n_b) designs."""
     target = _real(target, "target")
     if not 0 < target <= 1:

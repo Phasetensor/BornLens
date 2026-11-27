@@ -1,15 +1,23 @@
 """Read completed ShotWeave hardware JSONL exports for single-qubit Z."""
+from __future__ import annotations
+from typing import Any, Union
+from pathlib import Path
+
 import json
-from . import Sample, _integer, compare
+from . import Comparison, Sample, _integer, compare
 
 
-def compare_final(path, arm_a, arm_b, **settings):
+def compare_final(path: Union[str,Path], arm_a: int, arm_b: int, **settings: Any) -> Comparison:
     """Condition on the pilot allocation and use only fresh final-stage outcomes."""
     with open(path, encoding="utf8") as stream:
         rows = [json.loads(line) for line in stream if line.strip()]
     final, = [r for r in rows if "total_shots" in r]
     job, = [r for r in rows if r.get("stage") == "final" and "job_id" in r]
     pilot, = [r for r in rows if r.get("stage", "pilot") == "pilot" and "job_id" in r]
+    if any(not isinstance(r.get("job_id"),str) or not r["job_id"].strip() for r in (pilot,job)):
+        raise ValueError("missing measurement provenance")
+    for n in pilot["shots"]:
+        _integer(n,"pilot shots",1)
     shots, ones = final["final_shots"], final["successes"]
     if (pilot["job_id"] == job["job_id"] or job["shots"] != shots or
         len(shots) != len(ones) or len(pilot["shots"]) != len(shots) or

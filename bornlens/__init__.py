@@ -1,4 +1,6 @@
 """Compare independent, fixed-size samples of the same Pauli observable."""
+from __future__ import annotations
+
 
 from dataclasses import dataclass
 from math import ceil, isfinite, log, sqrt
@@ -32,7 +34,7 @@ class Sample:
     plus: int
     minus: int
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         label = self.observable
         if not isinstance(label, str) or not label or any(p not in "IXYZ" for p in label):
             raise ValueError("observable must be a nonempty uppercase Pauli string")
@@ -44,11 +46,11 @@ class Sample:
             raise ValueError("identity has only positive outcomes")
 
     @property
-    def shots(self):
+    def shots(self) -> int:
         return self.plus + self.minus
 
     @property
-    def mean(self):
+    def mean(self) -> float:
         return (self.plus - self.minus) / self.shots
 
 
@@ -75,7 +77,7 @@ def _verdict(lower, upper, tolerance):
     return "inconclusive"
 
 
-def compare(a: Sample, b: Sample, *, tolerance, confidence=0.95, method="hoeffding"):
+def compare(a: Sample, b: Sample, *, tolerance: float, confidence: float=0.95, method: str="hoeffding") -> Comparison:
     """Return a two-sided Hoeffding interval and its tolerance verdict."""
     if not isinstance(a, Sample) or not isinstance(b, Sample):
         raise TypeError("both inputs must be Sample instances")
@@ -101,7 +103,7 @@ def compare(a: Sample, b: Sample, *, tolerance, confidence=0.95, method="hoeffdi
                       _verdict(lower, upper, tolerance), method)
 
 
-def shots_per_circuit(half_width, *, confidence=0.95):
+def shots_per_circuit(half_width: float, *, confidence: float=0.95) -> int:
     """Equal fixed sample sizes sufficient for the requested interval precision."""
     half_width = _real(half_width, "half_width")
     if not 0 < half_width <= 2:

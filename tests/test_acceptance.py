@@ -127,3 +127,53 @@ class Interoperability(unittest.TestCase):
                     path.write_text("\n".join(map(json.dumps,rows)))
                     self.assertEqual(compare_final(path,0,1,tolerance=.2),ref)
             self.assertEqual(ref.shots_a+ref.shots_b,sum(exp.final_shots))
+
+@unittest.skipUnless(STATS,"stats extra")
+class AcceptanceEdges(unittest.TestCase):
+    def test_adapter_and_bounds(self):
+        from bornlens import advanced as a
+        s=Sample("Z",2,3)
+        for family in [[],{},{"X":(s,s)},{"Z":(s,Sample("X",1,2))}]:
+            with self.assertRaises(ValueError):
+                a.compare_many(family,tolerance=.1)
+        with self.assertRaises(ValueError):
+            a.distribution_compare({"A":10**30},{"B":1})
+        self.assertIsNone(a.optimize_design(.2,.3,[(5,5)],budget=4,tolerance=.1))
+        with self.assertRaises(ValueError):
+            a.bayesian_compare(s,s,tolerance=float("nan"))
+        self.assertTrue(a.hierarchical_effect([.1,.2],[1e-150,.01])["between_variance"]>=0)
+
+    def test_qiskit_regression(self):
+        if not importlib.util.find_spec("qiskit"):
+            self.skipTest("Qiskit extra")
+        from qiskit import QuantumCircuit
+        from bornlens.advanced import regression_check
+        from bornlens.qiskit import sample_counts,from_counts
+        a=QuantumCircuit(1)
+        for n,angle,label in [(10000,0,"pass"),(10000,.01,"pass"),(10000,2.8,"fail"),(8,0,"inconclusive")]:
+            b=QuantumCircuit(1);b.x(0);b.x(0);b.ry(angle,0)
+            family={p:tuple(from_counts(sample_counts(c,p,n,seed=i+42),p) for i,c in enumerate([a,b])) for p in ("X","Z")}
+            self.assertEqual(regression_check(family,tolerance=.1)["status"],label)
+
+    def test_design_oracle(self):
+        from scipy.stats import binom
+        from bornlens.advanced import optimize_design
+        designs=[(6,8),(7,7),(8,6)]
+        def brute(na,nb):
+            return sum(binom.pmf(i,na,.02)*binom.pmf(j,nb,.97)
+                       for i in range(na+1) for j in range(nb+1)
+                       if compare(Sample("Z",i,na-i),Sample("Z",j,nb-j),tolerance=.2).verdict=="beyond_tolerance")
+        best,result=optimize_design(.02,.97,designs,budget=14,tolerance=.2)
+        self.assertAlmostEqual(result.correct,max(brute(*d) for d in designs))
+        self.assertAlmostEqual(result.correct,brute(*best))
+
+
+if importlib.util.find_spec("hypothesis") and STATS:
+    from hypothesis import given, strategies as st
+    class Properties(unittest.TestCase):
+        @given(st.lists(st.floats(min_value=0,max_value=1,allow_nan=False),min_size=1,max_size=40))
+        def test_holm_monotone(self,p):
+            from bornlens.advanced import adjust_pvalues
+            adjusted=adjust_pvalues(sorted(p))
+            self.assertEqual(adjusted,sorted(adjusted))
+            self.assertTrue(all(raw<=adj<=1 for raw,adj in zip(sorted(p),adjusted)))
