@@ -1,0 +1,49 @@
+name: Scientific acceptance
+on:
+  push:
+    branches: [advanced-final-validation, main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install '.[qiskit,stats]' 'shotweave==0.2.0' coverage hypothesis statsmodels ruff mypy build twine
+      - name: Types
+        run: mypy bornlens
+      - name: Coverage
+        if: success() || failure()
+        run: |
+          coverage run --branch --source=bornlens -m unittest discover -s tests -v
+          coverage json
+          coverage report -m
+          python scripts/coverage_gate.py
+      - name: Lint
+        if: success() || failure()
+        run: ruff check .
+      - name: Format
+        if: success() || failure()
+        run: ruff format --check .
+      - name: Distributions
+        if: success() || failure()
+        run: |
+          python -m build
+          twine check --strict dist/*
+          for pkg in dist/*; do
+            python -m venv --clear /tmp/bornlens-acceptance
+            /tmp/bornlens-acceptance/bin/pip install "$pkg[stats,qiskit]"
+            (cd /tmp && /tmp/bornlens-acceptance/bin/python -I -c 'from bornlens.advanced import compare_many; from bornlens.qiskit import compare_circuits')
+          done
+          sha256sum dist/*
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: acceptance-distributions
+          path: |
+            dist/
+            coverage.json

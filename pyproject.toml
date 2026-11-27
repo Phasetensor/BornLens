@@ -16,3 +16,11 @@ stats = ["scipy>=1.9"]
 
 [tool.setuptools]
 packages = ["bornlens"]
+
+[tool.setuptools.package-data]
+bornlens = ["py.typed"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+check_untyped_defs = true
