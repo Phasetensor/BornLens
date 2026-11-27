@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Optional, Union
 
 import numpy as np
 from qiskit.circuit import Gate, QuantumCircuit
@@ -38,7 +37,7 @@ def sample_counts(
     observable: str,
     shots: int,
     *,
-    seed: Optional[Union[int, np.random.Generator]] = None,
+    seed: int | np.random.Generator | None = None,
 ) -> dict[str, int]:
     """Sample after rotating each measured Pauli axis to the Z basis."""
     Sample(observable, 1, 0)
@@ -70,7 +69,7 @@ def compare_circuits(
     shots_b: int,
     tolerance: float,
     confidence: float = 0.95,
-    seed: Optional[int] = None,
+    seed: int | None = None,
     method: str = "hoeffding",
 ) -> Comparison:
     """Run both ideal circuits using separate random streams."""

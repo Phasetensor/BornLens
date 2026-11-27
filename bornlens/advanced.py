@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict, is_dataclass
 from math import log, sqrt
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 from scipy.stats import binomtest, fisher_exact, norm
@@ -141,7 +141,7 @@ def bayesian_compare(
     prior: tuple[float, float] = (0.5, 0.5),
     confidence: float = 0.95,
     draws: int = 50000,
-    seed: Optional[int] = 0,
+    seed: int | None = 0,
 ) -> dict[str, Any]:
     """Independent beta posteriors on plus probabilities; posterior Monte Carlo."""
     _pair(a, b)
@@ -159,14 +159,14 @@ def bayesian_compare(
         d.fill(0)
     within = float(np.mean(abs(d) <= tolerance))
     tail = (1 - confidence) / 2
-    return dict(
-        mean=float(d.mean()),
-        credible_interval=np.quantile(d, [tail, 1 - tail]).tolist(),
-        within_probability=within,
-        mc_se=sqrt(within * (1 - within) / draws),
-        draws=draws,
-        seed=seed,
-    )
+    return {
+        "mean": float(d.mean()),
+        "credible_interval": np.quantile(d, [tail, 1 - tail]).tolist(),
+        "within_probability": within,
+        "mc_se": sqrt(within * (1 - within) / draws),
+        "draws": draws,
+        "seed": seed,
+    }
 
 
 def _paired(a, b):
@@ -189,9 +189,12 @@ def paired_compare(
     radius = sqrt(8 * log(2 / (1 - confidence)) / len(d))
     mean = float(d.mean())
     lo, hi = max(-2, mean - radius), min(2, mean + radius)
-    return dict(
-        delta=mean, interval=(lo, hi), pairs=len(d), verdict=_verdict(lo, hi, tolerance)
-    )
+    return {
+        "delta": mean,
+        "interval": (lo, hi),
+        "pairs": len(d),
+        "verdict": _verdict(lo, hi, tolerance),
+    }
 
 
 def bootstrap_interval(
@@ -201,7 +204,7 @@ def bootstrap_interval(
     paired: bool = False,
     confidence: float = 0.95,
     draws: int = 10000,
-    seed: Optional[int] = 0,
+    seed: int | None = 0,
 ) -> tuple[float, float]:
     """Percentile bootstrap of the mean change, using the empirical discrete laws."""
     rng = np.random.default_rng(seed)
@@ -240,7 +243,7 @@ def distribution_compare(
     b: Mapping[str, int],
     *,
     draws: int = 10000,
-    seed: Optional[int] = 0,
+    seed: int | None = 0,
 ) -> dict[str, Any]:
     """Total variation and a conditional random-label test for common categories."""
     if not isinstance(a, Mapping) or not isinstance(b, Mapping):
@@ -265,12 +268,12 @@ def distribution_compare(
         )
         tv = np.abs(x / na - (totals - x) / nb).sum(axis=1) / 2
         extreme += int((tv >= observed - 1e-14).sum())
-    return dict(
-        total_variation=observed,
-        pvalue=(extreme + 1) / (draws + 1),
-        draws=draws,
-        seed=seed,
-    )
+    return {
+        "total_variation": observed,
+        "pvalue": (extreme + 1) / (draws + 1),
+        "draws": draws,
+        "seed": seed,
+    }
 
 
 def readout_diagnostics(
@@ -287,7 +290,7 @@ def readout_diagnostics(
         ("one_to_zero", prepared_one.plus, prepared_one.shots),
     ):
         ci = binomtest(k, n).proportion_ci(1 - (1 - confidence) / 2)
-        out[key] = dict(rate=k / n, interval=(ci.low, ci.high))
+        out[key] = {"rate": k / n, "interval": (ci.low, ci.high)}
     out["contrast"] = 1 - out["zero_to_one"]["rate"] - out["one_to_zero"]["rate"]
     return out
 
@@ -302,7 +305,7 @@ def drift_monitor(
         p = randomization_test(reference, sample)
         threshold = alpha / (t * (t + 1))
         history.append(
-            dict(window=t, pvalue=p, threshold=threshold, alarm=p <= threshold)
+            {"window": t, "pvalue": p, "threshold": threshold, "alarm": p <= threshold}
         )
     return history
 
@@ -311,12 +314,12 @@ def effect_size(a: Sample, b: Sample, *, tolerance: float) -> dict[str, float]:
     _pair(a, b)
     tolerance = _tol(tolerance)
     pa, pb = a.plus / a.shots, b.plus / b.shots
-    return dict(
-        delta=b.mean - a.mean,
-        risk_difference=pb - pa,
-        cohens_h=float(2 * (np.arcsin(np.sqrt(pb)) - np.arcsin(np.sqrt(pa)))),
-        margin_excess=abs(b.mean - a.mean) - tolerance,
-    )
+    return {
+        "delta": b.mean - a.mean,
+        "risk_difference": pb - pa,
+        "cohens_h": float(2 * (np.arcsin(np.sqrt(pb)) - np.arcsin(np.sqrt(pa)))),
+        "margin_excess": abs(b.mean - a.mean) - tolerance,
+    }
 
 
 def optimize_design(
@@ -326,7 +329,7 @@ def optimize_design(
     *,
     budget: int,
     **settings: Any,
-) -> Optional[tuple[tuple[int, int], Power]]:
+) -> tuple[tuple[int, int], Power] | None:
     """Maximize correct classification among admissible candidate designs."""
     budget = _integer(budget, "budget", 2)
     best = None
@@ -372,17 +375,15 @@ def hierarchical_effect(
     radius = -norm.ppf((1 - _prob(confidence, "confidence")) / 2) / np.sqrt(
         weights.sum()
     )
-    return dict(
-        mean=mu,
-        between_variance=tau2,
-        interval=(float(mu - radius), float(mu + radius)),
-        shrunk_effects=(mu + tau2 * weights * (y - mu)).astype(float).tolist(),
-    )
+    return {
+        "mean": mu,
+        "between_variance": tau2,
+        "interval": (float(mu - radius), float(mu + radius)),
+        "shrunk_effects": (mu + tau2 * weights * (y - mu)).astype(float).tolist(),
+    }
 
 
-def write_report(
-    path: Union[str, Path], *, inputs: Any, settings: Any, results: Any
-) -> None:
+def write_report(path: str | Path, *, inputs: Any, settings: Any, results: Any) -> None:
     """Write machine-readable inputs, analysis configuration and results as strict JSON."""
     from importlib.metadata import version
 
@@ -393,13 +394,13 @@ def write_report(
             return value.item()
         raise TypeError(f"unsupported report type {type(value).__name__}")
 
-    report = dict(
-        schema_version=1,
-        versions={p: version(p) for p in ("bornlens", "numpy", "scipy")},
-        inputs=inputs,
-        settings=settings,
-        results=results,
-    )
+    report = {
+        "schema_version": 1,
+        "versions": {p: version(p) for p in ("bornlens", "numpy", "scipy")},
+        "inputs": inputs,
+        "settings": settings,
+        "results": results,
+    }
     content = json.dumps(
         report, default=encode, sort_keys=True, indent=2, allow_nan=False
     )

@@ -8,3 +8,5 @@
 6. Obtain final project-owner approval before promotion or publication.
 7. Record tag commit and successful Trusted Publishing job. Download published GitHub and PyPI files and compare SHA-256 against the same build artifacts.
 8. Verify installation from the public index and distinguish skipped publishing from successful publication.
+
+See the [acceptance report](acceptance-report.md) for the evidence reviewed before approval.

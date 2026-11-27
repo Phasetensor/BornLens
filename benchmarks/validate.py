@@ -426,15 +426,15 @@ def validate(reps, out):
         writer.writerows(rows)
     (out / "metadata.json").write_text(
         json.dumps(
-            dict(
-                seed=4703,
-                main_replicates=reps,
-                python=platform.python_version(),
-                platform=platform.platform(),
-                numpy=np.__version__,
-                scipy=scipy.__version__,
-                runtime_seconds_and_peak_traced_bytes=timings,
-            ),
+            {
+                "seed": 4703,
+                "main_replicates": reps,
+                "python": platform.python_version(),
+                "platform": platform.platform(),
+                "numpy": np.__version__,
+                "scipy": scipy.__version__,
+                "runtime_seconds_and_peak_traced_bytes": timings,
+            },
             indent=2,
         )
         + "\n"

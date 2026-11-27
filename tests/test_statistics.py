@@ -11,14 +11,14 @@ from bornlens.shotweave import compare_final
 class InteropTests(unittest.TestCase):
     def test_stage_separation(self):
         rows = [
-            dict(job_id="a", shots=[10, 10]),
-            dict(stage="final", job_id="b", shots=[11, 20]),
-            dict(
-                total_shots=51,
-                final_shots=[11, 20],
-                successes=[2, 5],
-                pilot_successes=[10, 0],
-            ),
+            {"job_id": "a", "shots": [10, 10]},
+            {"stage": "final", "job_id": "b", "shots": [11, 20]},
+            {
+                "total_shots": 51,
+                "final_shots": [11, 20],
+                "successes": [2, 5],
+                "pilot_successes": [10, 0],
+            },
         ]
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "run"
@@ -44,9 +44,11 @@ class InferenceTests(unittest.TestCase):
 
         for method in ("hoeffding", "newcombe", "exact"):
             for pa, pb in ((0, 1), (0.2, 0.75), (0.5, 0.5)):
-                expected = dict(
-                    within_tolerance=0.0, beyond_tolerance=0.0, inconclusive=0.0
-                )
+                expected = {
+                    "within_tolerance": 0.0,
+                    "beyond_tolerance": 0.0,
+                    "inconclusive": 0.0,
+                }
                 for i in range(8):
                     for j in range(12):
                         r = compare(
@@ -76,7 +78,7 @@ class InferenceTests(unittest.TestCase):
     def test_design_search(self):
         from bornlens.statistics import plan_classification
 
-        settings = dict(target=0.9, tolerance=0.2)
+        settings = {"target": 0.9, "tolerance": 0.2}
         self.assertEqual(
             plan_classification(0, 1, [(100, 100), (10, 10)], **settings)[0], (10, 10)
         )

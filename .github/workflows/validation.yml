@@ -30,13 +30,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install '.[qiskit,stats]' 'shotweave==0.2.0' coverage hypothesis statsmodels ruff mypy build twine
-      - name: Formatting diagnostics
-        run: |
-          ruff check --fix --unsafe-fixes --exit-zero .
-          ruff format .
-          git diff | gzip -c | base64 -w0 > /tmp/style
-          echo "FORMAT_PATCH=$(cat /tmp/style)"
-          git restore .
       - name: Types
         run: mypy bornlens
       - name: Coverage
@@ -60,10 +53,12 @@ jobs:
         run: |
           python -m build
           twine check --strict dist/*
+          export BORNLENS_GUIDE="$PWD/docs/advanced.md"
           for pkg in dist/*; do
             python -m venv --clear /tmp/bornlens-acceptance
             /tmp/bornlens-acceptance/bin/pip install "$pkg[stats,qiskit]"
             (cd /tmp && /tmp/bornlens-acceptance/bin/python -I -c 'from bornlens.advanced import compare_many; from bornlens.qiskit import compare_circuits')
+            (cd /tmp && /tmp/bornlens-acceptance/bin/python -I -c 'import os, re; from pathlib import Path; blocks = re.findall(r"```python\n(.*?)```", Path(os.environ["BORNLENS_GUIDE"]).read_text(), re.S); assert len(blocks) == 2; exec("\n".join(blocks))')
           done
           tar tzf dist/*.tar.gz | grep '/benchmarks/acceptance/metrics.csv$'
           unzip -l dist/*.whl | grep bornlens/py.typed

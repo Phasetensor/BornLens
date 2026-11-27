@@ -42,9 +42,12 @@ def run(service, backend_name, job_id=None):
     if any(sum(counts.values()) != 4096 for counts in (a, b)):
         raise ValueError("unexpected shot count")
     result = compare(from_counts(a, "Z"), from_counts(b, "Z"), tolerance=0.1)
-    return dict(
-        backend=backend_name, job_id=job.job_id(), counts=[a, b], result=asdict(result)
-    )
+    return {
+        "backend": backend_name,
+        "job_id": job.job_id(),
+        "counts": [a, b],
+        "result": asdict(result),
+    }
 
 
 if __name__ == "__main__":

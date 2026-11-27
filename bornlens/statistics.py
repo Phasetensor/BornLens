@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from math import sqrt
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from scipy.special import betaincinv, ndtri
@@ -121,7 +121,7 @@ def plan_classification(
     *,
     target: float,
     **settings: Any,
-) -> Optional[tuple[tuple[int, int], Power]]:
+) -> tuple[tuple[int, int], Power] | None:
     """Return lowest total shots meeting target among supplied (n_a,n_b) designs."""
     target = _real(target, "target")
     if not 0 < target <= 1:

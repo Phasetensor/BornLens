@@ -111,7 +111,9 @@ def render():
     ax = panel("Allocation n : 2n", "Correct classification")
     for pair in [".5/.5", "0.01/0.02", "0.2/0.6"]:
         prefix = pair.replace(".5/.5", "0.5/0.5") + "/"
-        vals = values("design", "correct", lambda s, prefix=prefix: s.startswith(prefix))
+        vals = values(
+            "design", "correct", lambda s, prefix=prefix: s.startswith(prefix)
+        )
         ax.plot(
             [int(s.split("/")[-1]) for s, _ in vals],
             [v for _, v in vals],

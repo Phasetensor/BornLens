@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 from . import Comparison, Sample, _integer, compare
 
 
 def compare_final(
-    path: Union[str, Path], arm_a: int, arm_b: int, **settings: Any
+    path: str | Path, arm_a: int, arm_b: int, **settings: Any
 ) -> Comparison:
     """Condition on the pilot allocation and use only fresh final-stage outcomes."""
     with open(path, encoding="utf8") as stream:
