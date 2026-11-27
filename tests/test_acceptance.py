@@ -101,7 +101,7 @@ class Acceptance(unittest.TestCase):
             a, b = Sample("Z", 2, 5), Sample("Z", 3, 7)
             aa, bb = beta(a.plus + x, a.minus + y), beta(b.plus + x, b.minus + y)
             prob = quad(
-                lambda t: (
+                lambda t, aa=aa, bb=bb: (
                     aa.pdf(t) * (bb.cdf(min(1, t + 0.1)) - bb.cdf(max(0, t - 0.1)))
                 ),
                 0,
@@ -159,7 +159,7 @@ class Interoperability(unittest.TestCase):
         for strategy in ("uniform", "adaptive", "bayesian", "robust", "noise-aware"):
             batches = []
 
-            def submit(shots):
+            def submit(shots, batches=batches):
                 counts = [
                     int(
                         sample_counts(c, "Z", n, seed=47 + 10 * len(batches) + i).get(
@@ -290,3 +290,16 @@ if importlib.util.find_spec("hypothesis") and STATS:
             self.assertTrue(
                 all(raw <= adj <= 1 for raw, adj in zip(sorted(p), adjusted))
             )
+
+
+@unittest.skipUnless(STATS, "stats extra")
+class PosteriorQuantiles(unittest.TestCase):
+    def test_credible_endpoints(self):
+        from scipy.integrate import quad
+        from scipy.stats import beta
+        from bornlens.advanced import bayesian_compare
+        a, b = Sample("Z", 3, 5), Sample("Z", 2, 4)
+        result = bayesian_compare(a, b, tolerance=.2, prior=(1,1), draws=100000)
+        for delta, target in zip(result["credible_interval"], [.025,.975]):
+            cdf = quad(lambda p, delta=delta: beta.pdf(p,4,6)*beta.cdf(p+delta/2,3,5),0,1)[0]
+            self.assertLess(abs(cdf-target),.004)

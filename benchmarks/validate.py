@@ -334,7 +334,7 @@ def validate(reps, out):
             for x, y in [(0.5, 0.5), (1, 1), (10, 2), (0.2, 5)]:
                 aa, bb = beta(a.plus + x, a.minus + y), beta(b.plus + x, b.minus + y)
                 prob = quad(
-                    lambda t: (
+                    lambda t, aa=aa, bb=bb: (
                         aa.pdf(t)
                         * (bb.cdf(min(1, t + 0.05)) - bb.cdf(max(0, t - 0.05)))
                     ),
@@ -373,7 +373,7 @@ def validate(reps, out):
             k = rng.binomial(n, p0, reps)
             j = rng.binomial(n, p1, reps)
 
-            def intervals(counts, true):
+            def intervals(counts, true, n=n):
                 from scipy.stats import binomtest
 
                 bounds = [

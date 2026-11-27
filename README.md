@@ -68,7 +68,7 @@ The simulator uses separate random streams for A and B. Run the checks with
 
 ## Fixed-design validation
 
-Install the release with `python -m pip install bornlens==0.3.0`.
+Install the public 0.3.0 release with `python -m pip install bornlens==0.3.0`.
 For development install the checkout with the Qiskit extra and run
 `python benchmarks/coverage.py` to reproduce [the benchmark counts](benchmarks/results.csv).
 Each row contains 5,000 independent trials with a fixed seed, tolerance 0.1 and

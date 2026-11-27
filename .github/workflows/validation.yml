@@ -32,7 +32,7 @@ jobs:
       - run: python -m pip install '.[qiskit,stats]' 'shotweave==0.2.0' coverage hypothesis statsmodels ruff mypy build twine
       - name: Formatting diagnostics
         run: |
-          ruff check --fix --exit-zero .
+          ruff check --fix --unsafe-fixes --exit-zero .
           ruff format .
           git diff | gzip -c | base64 -w0 > /tmp/style
           echo "FORMAT_PATCH=$(cat /tmp/style)"
@@ -65,6 +65,8 @@ jobs:
             /tmp/bornlens-acceptance/bin/pip install "$pkg[stats,qiskit]"
             (cd /tmp && /tmp/bornlens-acceptance/bin/python -I -c 'from bornlens.advanced import compare_many; from bornlens.qiskit import compare_circuits')
           done
+          tar tzf dist/*.tar.gz | grep '/benchmarks/acceptance/metrics.csv$'
+          unzip -l dist/*.whl | grep bornlens/py.typed
           sha256sum dist/*
       - uses: actions/upload-artifact@v4
         if: success() || failure()

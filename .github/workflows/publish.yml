@@ -6,46 +6,9 @@ permissions:
 jobs:
   acceptance:
     uses: ./.github/workflows/validation.yml
-  tests:
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        python: ['3.9', '3.12']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python }}
-      - if: matrix.python == '3.9'
-        run: python -m pip install .
-      - if: matrix.python == '3.12'
-        run: python -m pip install '.[qiskit,stats]' coverage
-      - run: python -m unittest discover -s tests -v
-      - if: matrix.python == '3.12'
-        run: |
-          python -m coverage run --branch --source=bornlens -m unittest discover -s tests
-          python -m coverage report -m
-  build:
-    needs: [tests, acceptance]
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python -m pip install build twine && python -m build && python -m twine check --strict dist/*
-      - run: |
-          python -m venv /tmp/bornlens-check
-          /tmp/bornlens-check/bin/pip install dist/*.whl
-          cd /tmp
-          /tmp/bornlens-check/bin/python -c 'from bornlens import shots_per_circuit; assert shots_per_circuit(.05) == 5903'
-      - uses: actions/upload-artifact@v4
-        with:
-          name: distributions
-          path: dist/
   release:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: build
+    needs: acceptance
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -55,18 +18,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: distributions
-          path: dist
+          name: acceptance-distributions
+          path: checked
       - id: release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version=$(basename dist/*.tar.gz .tar.gz)
+          version=$(basename checked/dist/*.tar.gz .tar.gz)
           version=${version#bornlens-}
           if gh release view "v$version" >/dev/null 2>&1; then
             if [ "$(git ls-remote origin "refs/tags/v$version" | cut -f1)" != "$GITHUB_SHA" ]; then exit 0; fi
           else
-            gh release create "v$version" dist/* --target "$GITHUB_SHA" --title "BornLens $version" --notes "Advanced statistical analysis for quantum circuit comparisons. See docs/advanced.md for all 15 functions, examples and assumptions."
+            gh release create "v$version" checked/dist/* --target "$GITHUB_SHA" --title "BornLens $version" --notes "Advanced statistical analysis for quantum circuit comparisons. See docs/advanced.md for all 15 functions, examples and assumptions."
           fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
   publish:
@@ -75,10 +38,23 @@ jobs:
     runs-on: ubuntu-22.04
     environment: pypi
     permissions:
+      contents: read
       id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: distributions
-          path: dist
+          name: acceptance-distributions
+          path: checked
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: checked/dist/
+      - uses: actions/checkout@v4
+        with:
+          path: source
+      - name: Verify released bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(basename checked/dist/*.tar.gz .tar.gz)
+          gh release download "v${version#bornlens-}" --repo "$GITHUB_REPOSITORY" --dir github-files
+          python source/scripts/verify_hashes.py checked/dist github-files "${version#bornlens-}"

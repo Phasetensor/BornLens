@@ -78,7 +78,7 @@ use --job-id to resume collection. This protocol awaits fresh hardware data.
 
 ## Software checks
 
-The 12-test suite includes brute-force joint enumeration as an independent
+The historical 0.2.0 12-test suite includes brute-force joint enumeration as an independent
 check of the power algorithm and fixtures for disjoint pilot/final stages.
 Python trace with missing-line counting recorded 219/228 executable package
 lines (96.1%) on Python 3.12. CI also measures branches using coverage.py;
@@ -93,3 +93,13 @@ The sequential implementation uses a summable union bound; see
 for broader constructions. The permutation Monte Carlo test counts the
 observed assignment in the reference set; see
 [Phipson and Smyth](https://pubmed.ncbi.nlm.nih.gov/21044043/).
+
+For ShotWeave 0.2.0, the acceptance integration executes real package APIs and
+Qiskit statevector sampling with uniform, adaptive, Bayesian, robust and
+noise-aware allocations. Two-stage exports use distinct simulation job IDs and
+public bornlens_rows() serialization. Single-stage uniform and robust runs
+use their actual final counts directly. Noise-aware runs compare raw observed
+Z counts only; calibration-corrected estimates target another quantity.
+The JSONL schema does not encode a reliable stopping policy, physical observable
+mapping or independence certificate. Verify these from acquisition provenance.
+Sequentially stopped records cannot acquire fixed-design guarantees by conversion.
