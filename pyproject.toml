@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bornlens"
+version = "0.1.0.dev0"
+description = "Finite-shot comparisons of Pauli expectations"
+requires-python = ">=3.9"
+readme = "README.md"
+license = {file = "LICENSE"}
+
+[project.optional-dependencies]
+qiskit = ["qiskit>=2.6,<3"]
+
+[tool.setuptools]
+packages = ["bornlens"]
