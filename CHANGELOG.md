@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+Add 15 advanced statistical analysis and reporting functions. See [the API guide](docs/advanced.md) for assumptions and examples.
+
 ## 0.2.0
 
 - Add optional Newcombe score and conservative exact binomial intervals.

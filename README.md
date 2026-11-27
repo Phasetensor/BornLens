@@ -69,7 +69,7 @@ The simulator uses separate random streams for A and B. Run the checks with
 
 ## Validation and release 0.1.0
 
-Install the release with `python -m pip install bornlens==0.2.0`.
+Install the release with `python -m pip install bornlens==0.3.0`.
 For development install the checkout with the Qiskit extra and run
 `python benchmarks/coverage.py` to reproduce [the benchmark counts](benchmarks/results.csv).
 Each row contains 5,000 independent trials with a fixed seed, tolerance 0.1 and
@@ -81,3 +81,5 @@ ideal fixed-shot behavior; hardware drift and correlated noise require separate 
 ## Statistical extensions
 
 Install the stats extra with `python -m pip install 'bornlens[stats]'`. See [methods, power and hardware evidence](docs/methods.md) and the [changelog](CHANGELOG.md).
+
+See the [advanced analysis guide](docs/advanced.md) for multi-observable regression, sequential and paired inference, Bayesian analysis, bootstrap, distribution and drift tests, design optimization, hierarchical inference and JSON reports.

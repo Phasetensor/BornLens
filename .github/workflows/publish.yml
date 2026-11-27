@@ -67,7 +67,7 @@ jobs:
           if gh release view "v$version" >/dev/null 2>&1; then
             if [ "$(git ls-remote origin "refs/tags/v$version" | cut -f1)" != "$GITHUB_SHA" ]; then exit 0; fi
           else
-            gh release create "v$version" dist/* --target "$GITHUB_SHA" --title "BornLens $version" --notes "Finite-shot Pauli comparisons, confidence intervals, shot planning and Qiskit support. Reproducible benchmark results are included in the source distribution."
+            gh release create "v$version" dist/* --target "$GITHUB_SHA" --title "BornLens $version" --notes "Advanced statistical analysis for quantum circuit comparisons. See docs/advanced.md for all 15 functions, examples and assumptions."
           fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
   publish:
