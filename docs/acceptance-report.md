@@ -42,7 +42,7 @@ the checkout and runs the advanced guide against both installed packages.
 Statement and branch coverage are gated separately; exact counts are in the
 workflow log. Release promotion requires explicit approval and the reusable
 acceptance job. The release workflow checks downloaded GitHub and PyPI bytes
-against its local validated build. The [release run](https://github.com/Phasetensor/BornLens/actions/runs/46013266006) verifies both public distributions against the [approved hashes](../releases/0.3.1.sha256).
+against its local validated build. The [public installation and integrity check](https://github.com/Phasetensor/BornLens/actions/runs/46013432238) verifies both public distributions against the [approved hashes](../releases/0.3.1.sha256).
 
 No new hardware acquisitions were made. Readout diagnostics do not identify
 the physical cause of observed discrepancies. Drift delay is conditional on
