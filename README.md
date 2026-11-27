@@ -2,7 +2,7 @@
 
 BornLens compares a Pauli expectation before and after a quantum circuit change.
 It reports the measured change, a finite-sample confidence interval and a tolerance verdict.
-Development version, part of the PhaseTensor Quantum Computing Suite.
+Part of the PhaseTensor Quantum Computing Suite.
 
 Install from a checkout with `python -m pip install .`. For ideal Qiskit simulation use
 `python -m pip install '.[qiskit]'`.
@@ -66,3 +66,14 @@ after applying these basis rotations and measuring qubit i into classical bit i
 of one full-width register. The caller supplies the measurement basis and mapping.
 The simulator uses separate random streams for A and B. Run the checks with
 `python -m unittest discover -s tests -v`.
+
+## Validation and release 0.1.0
+
+Install the release with `python -m pip install bornlens==0.1.0`.
+For development install the checkout with the Qiskit extra and run
+`python benchmarks/coverage.py` to reproduce [the benchmark counts](benchmarks/results.csv).
+Each row contains 5,000 independent trials with a fixed seed, tolerance 0.1 and
+nominal coverage 95%. The samples follow the exact Z measurement law of ideal
+single-qubit Ry circuits. Incorrect counts exclude inconclusive decisions.
+The benchmark covers five true changes and three shot budgets. It measures
+ideal fixed-shot behavior; hardware drift and correlated noise require separate experiments.

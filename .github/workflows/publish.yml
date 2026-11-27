@@ -1,0 +1,80 @@
+name: Test and release
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.9', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - if: matrix.python == '3.9'
+        run: python -m pip install .
+      - if: matrix.python == '3.12'
+        run: python -m pip install '.[qiskit]'
+      - run: python -m unittest discover -s tests -v
+  build:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install build twine && python -m build && python -m twine check --strict dist/*
+      - run: |
+          python -m venv /tmp/bornlens-check
+          /tmp/bornlens-check/bin/pip install dist/*.whl
+          cd /tmp
+          /tmp/bornlens-check/bin/python -c 'from bornlens import shots_per_circuit; assert shots_per_circuit(.05) == 5903'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      publish: ${{ steps.release.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')
+          if gh release view "v$version" >/dev/null 2>&1; then
+            if [ "$(git ls-remote origin "refs/tags/v$version" | cut -f1)" != "$GITHUB_SHA" ]; then exit 0; fi
+          else
+            gh release create "v$version" dist/* --target "$GITHUB_SHA" --title "BornLens $version" --notes "Finite-shot Pauli comparisons, confidence intervals, shot planning and Qiskit support. Reproducible benchmark results are included in the source distribution."
+          fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+  publish:
+    needs: release
+    if: needs.release.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
