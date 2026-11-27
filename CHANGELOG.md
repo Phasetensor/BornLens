@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.1 (acceptance candidate)
+## 0.3.1 (2026-11-27)
 
 Stabilize power tails and heterogeneity calculations; validate provenance, annotate APIs and ship typing metadata. Add independent scientific acceptance, operating characteristics, figures and separate CI thresholds.
 

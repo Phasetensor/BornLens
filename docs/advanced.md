@@ -1,6 +1,6 @@
-# Advanced analysis (0.3.0)
+# Advanced analysis (0.3.1)
 
-Install `python -m pip install 'bornlens[stats]==0.3.0'`. All functions below are
+Install `python -m pip install 'bornlens[stats]==0.3.1'`. All functions below are
 importable from `bornlens.advanced`. Tolerances and signed changes use Pauli
 expectation units, B minus A. Declare the family, pairing, decision margins,
 look schedule and model before observing outcomes.

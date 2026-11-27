@@ -1,9 +1,7 @@
 # Scientific acceptance report for BornLens 0.3.1
 
 Candidate branch: advanced-final-validation. Baseline tag: v0.3.0 at
-7e95beb874de855cadd3ac041d9f72df2ffeb1a2. The final candidate SHA,
-test log, coverage counts and artifact digests are emitted by the branch
-workflow. The public release stays at 0.3.0 until owner approval.
+7e95beb874de855cadd3ac041d9f72df2ffeb1a2. The approved commit is `4db29f5c26deb3206a46fb36e21f747fdac54a27`. The [acceptance run](https://github.com/Phasetensor/BornLens/actions/runs/46012347525) records the test log and coverage counts.
 
 ## Scientific evidence
 
@@ -44,8 +42,7 @@ the checkout and runs the advanced guide against both installed packages.
 Statement and branch coverage are gated separately; exact counts are in the
 workflow log. Release promotion requires explicit approval and the reusable
 acceptance job. The release workflow checks downloaded GitHub and PyPI bytes
-against its local validated build. Public 0.3.1 hashes and public installation
-cannot be observed before publication.
+against its local validated build. The [release run](https://github.com/Phasetensor/BornLens/actions/runs/46013266006) verifies both public distributions against the [approved hashes](../releases/0.3.1.sha256).
 
 No new hardware acquisitions were made. Readout diagnostics do not identify
 the physical cause of observed discrepancies. Drift delay is conditional on

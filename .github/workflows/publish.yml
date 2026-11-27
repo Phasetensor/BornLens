@@ -1,17 +1,16 @@
 name: Test and release
 on:
-  push:
-    branches: [main]
-    paths: [releases/0.3.1.sha256]
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
+  acceptance:
+    uses: ./.github/workflows/validation.yml
   release:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: acceptance
     runs-on: ubuntu-22.04
     permissions:
-      actions: read
       contents: write
     outputs:
       publish: ${{ steps.release.outputs.publish }}
@@ -21,8 +20,6 @@ jobs:
         with:
           name: acceptance-distributions
           path: checked
-          run-id: 46012347525
-          github-token: ${{ github.token }}
       - id: release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -30,10 +27,9 @@ jobs:
           version=$(basename checked/dist/*.tar.gz .tar.gz)
           version=${version#bornlens-}
           if gh release view "v$version" >/dev/null 2>&1; then
-            if [ "$(git ls-remote origin "refs/tags/v$version" | cut -f1)" != "4db29f5c26deb3206a46fb36e21f747fdac54a27" ]; then exit 1; fi
+            if [ "$(git ls-remote origin "refs/tags/v$version" | cut -f1)" != "$GITHUB_SHA" ]; then exit 0; fi
           else
-            (cd checked/dist && sha256sum -c ../../releases/0.3.1.sha256)
-            gh release create "v$version" checked/dist/* --target "4db29f5c26deb3206a46fb36e21f747fdac54a27" --title "BornLens $version" --notes "Advanced statistical analysis for quantum circuit comparisons. See docs/advanced.md for all 15 functions, examples and assumptions."
+            gh release create "v$version" checked/dist/* --target "$GITHUB_SHA" --title "BornLens $version" --notes "Advanced statistical analysis for quantum circuit comparisons. See docs/advanced.md for all 15 functions, examples and assumptions."
           fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
   publish:
@@ -42,7 +38,6 @@ jobs:
     runs-on: ubuntu-22.04
     environment: pypi
     permissions:
-      actions: read
       contents: read
       id-token: write
     steps:
@@ -50,11 +45,8 @@ jobs:
         with:
           name: acceptance-distributions
           path: checked
-          run-id: 46012347525
-          github-token: ${{ github.token }}
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          skip-existing: true
           packages-dir: checked/dist/
       - uses: actions/checkout@v4
         with:
