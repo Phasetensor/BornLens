@@ -20,8 +20,12 @@ jobs:
       - if: matrix.python == '3.9'
         run: python -m pip install .
       - if: matrix.python == '3.12'
-        run: python -m pip install '.[qiskit]'
+        run: python -m pip install '.[qiskit,stats]' coverage
       - run: python -m unittest discover -s tests -v
+      - if: matrix.python == '3.12'
+        run: |
+          python -m coverage run --branch --source=bornlens -m unittest discover -s tests
+          python -m coverage report -m
   build:
     needs: tests
     runs-on: ubuntu-22.04

@@ -64,6 +64,7 @@ class Comparison:
     shots_a: int
     shots_b: int
     verdict: str
+    method: str = "hoeffding"
 
 
 def _verdict(lower, upper, tolerance):
@@ -74,7 +75,7 @@ def _verdict(lower, upper, tolerance):
     return "inconclusive"
 
 
-def compare(a: Sample, b: Sample, *, tolerance, confidence=0.95):
+def compare(a: Sample, b: Sample, *, tolerance, confidence=0.95, method="hoeffding"):
     """Return a two-sided Hoeffding interval and its tolerance verdict."""
     if not isinstance(a, Sample) or not isinstance(b, Sample):
         raise TypeError("both inputs must be Sample instances")
@@ -89,9 +90,15 @@ def compare(a: Sample, b: Sample, *, tolerance, confidence=0.95):
     if set(a.observable) == {"I"}:
         radius = 0.0
     lower, upper = max(-2, delta - radius), min(2, delta + radius)
+    if method != "hoeffding":
+        from .statistics import interval
+        lower, upper = interval(a.plus, a.shots, b.plus, b.shots, confidence, method)
+        lower, upper = float(lower), float(upper)
+        if set(a.observable) == {"I"}:
+            lower = upper = 0.0
     return Comparison(a.observable, a.mean, b.mean, delta, (lower, upper),
                       tolerance, confidence, a.shots, b.shots,
-                      _verdict(lower, upper, tolerance))
+                      _verdict(lower, upper, tolerance), method)
 
 
 def shots_per_circuit(half_width, *, confidence=0.95):

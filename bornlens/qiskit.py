@@ -48,7 +48,7 @@ def sample_counts(circuit, observable, shots, *, seed=None):
 
 
 def compare_circuits(a, b, observable, *, shots_a, shots_b, tolerance,
-                     confidence=0.95, seed=None):
+                     confidence=0.95, seed=None, method="hoeffding"):
     """Run both ideal circuits using separate random streams."""
     streams = np.random.SeedSequence(seed).spawn(2)
     samples = [
@@ -56,4 +56,4 @@ def compare_circuits(a, b, observable, *, shots_a, shots_b, tolerance,
                                   seed=np.random.default_rng(stream)), observable)
         for circuit, shots, stream in zip((a, b), (shots_a, shots_b), streams)
     ]
-    return compare(*samples, tolerance=tolerance, confidence=confidence)
+    return compare(*samples, tolerance=tolerance, confidence=confidence, method=method)

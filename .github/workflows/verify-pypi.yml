@@ -1,12 +1,14 @@
 name: Verify public installation
 on:
   workflow_dispatch:
-  push:
-    paths: ['.github/workflows/verify-pypi.yml']
+  workflow_run:
+    workflows: ["Test and release"]
+    types: [completed]
 permissions:
   contents: read
 jobs:
   install:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/setup-python@v5
@@ -14,5 +16,5 @@ jobs:
           python-version: '3.12'
       - run: |
           python -m venv /tmp/bornlens-public
-          /tmp/bornlens-public/bin/pip install --no-cache-dir --index-url https://pypi.org/simple bornlens==0.1.0
+          /tmp/bornlens-public/bin/pip install --no-cache-dir --index-url https://pypi.org/simple bornlens==0.2.0
           /tmp/bornlens-public/bin/python -I -c 'from bornlens import shots_per_circuit; assert shots_per_circuit(0.05) == 5903'
